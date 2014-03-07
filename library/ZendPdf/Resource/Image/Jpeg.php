@@ -45,9 +45,6 @@ class Jpeg extends AbstractImage
             throw new Exception\RuntimeException('JPG support is not configured properly.');
         }
 
-        if (!is_readable($imageFileName)) {
-            throw new Exception\IOException( "File '$imageFileName' is not readable." );
-        }
         if (($imageInfo = getimagesize($imageFileName)) === false) {
             throw new Exception\CorruptedImageException('Corrupted image.');
         }
@@ -83,21 +80,19 @@ class Jpeg extends AbstractImage
         if (($imageFile = @fopen($imageFileName, 'rb')) === false ) {
             throw new Exception\IOException("Can not open '$imageFileName' file for reading.");
         }
-        $byteCount = filesize($imageFileName);
         $this->_resource->value = '';
-        while ( $byteCount > 0 && ($nextBlock = fread($imageFile, $byteCount)) != false ) {
+        while ($nextBlock = fread($imageFile, 8096)) {
             $this->_resource->value .= $nextBlock;
-            $byteCount -= strlen($nextBlock);
         }
         fclose($imageFile);
         $this->_resource->skipFilters();
 
-    $this->_width = $imageInfo[0];
-    $this->_height = $imageInfo[1];
-    $this->_imageProperties = array();
-    $this->_imageProperties['bitDepth'] = $imageInfo['bits'];
-    $this->_imageProperties['jpegImageType'] = $imageInfo[2];
-    $this->_imageProperties['jpegColorType'] = $imageInfo['channels'];
+        $this->_width = $imageInfo[0];
+        $this->_height = $imageInfo[1];
+        $this->_imageProperties = array();
+        $this->_imageProperties['bitDepth'] = $imageInfo['bits'];
+        $this->_imageProperties['jpegImageType'] = $imageInfo[2];
+        $this->_imageProperties['jpegColorType'] = $imageInfo['channels'];
     }
 
     /**
