@@ -196,6 +196,9 @@ class Page
      * @param mixed $param3
      * @throws \ZendPdf\Exception\ExceptionInterface
      */
+
+    protected $resources = [];
+
     public function __construct($param1, $param2 = null, $param3 = null)
     {
         if (($param1 instanceof InternalType\IndirectObjectReference ||
@@ -341,22 +344,24 @@ class Page
         if ($this->_pageDictionary->Resources->$type === null) {
             $this->_pageDictionary->Resources->touch();
             $this->_pageDictionary->Resources->$type = new InternalType\DictionaryObject();
+            $this->resources[$type]['resources'] = new \SplObjectStorage();
         } else {
             $this->_pageDictionary->Resources->$type->touch();
         }
 
         // Check, that resource is already attached to resource set.
         $resObject = $resource->getResource();
-        foreach ($this->_pageDictionary->Resources->$type->getKeys() as $ResID) {
-            if ($this->_pageDictionary->Resources->$type->$ResID === $resObject) {
-                return $ResID;
-            }
+        if ($this->resources[$type]['resources']->offsetExists($resObject)) {
+            return $this->resources[$type]['resources']->offsetGet($resObject);
         }
 
-        $idCounter = 1;
-        do {
-            $newResName = $type[0] . $idCounter++;
-        } while ($this->_pageDictionary->Resources->$type->$newResName !== null);
+        if (!isset($this->resources[$type]['idCounter'])) {
+            $this->resources[$type]['idCounter'] = 0;
+        }
+
+        $this->resources[$type]['idCounter']++;
+        $newResName = $type[0] . $this->resources[$type]['idCounter'];
+        $this->resources[$type]['resources']->attach($resObject, $newResName);
 
         $this->_pageDictionary->Resources->$type->$newResName = $resObject;
         $this->_objFactory->attach($resource->getFactory());
